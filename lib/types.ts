@@ -47,6 +47,14 @@ export interface RoundState {
   winnerId?: string;
   /** true once results were reached for a solo (single-player) round */
   solo?: boolean;
+  /** ms timestamp the current phase began (drives AI "thinking" delays) */
+  phaseSince?: number;
+}
+
+/** An automated opponent that fills the table when you'd otherwise be solo. */
+export interface BotInfo {
+  id: string; // always starts with "bot:"
+  name: string;
 }
 
 export interface RoomState {
@@ -56,6 +64,7 @@ export interface RoomState {
   scores: Record<string, number>;
   names: Record<string, string>; // playerId -> last known display name
   recentPromptIds: string[]; // to avoid repeats
+  bots: BotInfo[]; // active AI players
 }
 
 /** What the client renders. Trimmed/personalised per requesting player. */
@@ -77,7 +86,10 @@ export interface RoomView {
     score: number;
     submitted: boolean;
     online: boolean;
+    isBot: boolean;
   }>;
+  /** number of AI opponents currently filling the table */
+  bots: number;
   /** Submissions shown during voting (anonymised) and results (revealed). */
   table: Array<{
     /** stable key for this submission within the round */

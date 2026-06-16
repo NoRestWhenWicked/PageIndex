@@ -124,6 +124,14 @@ export default function GameRoom({ meta }: { meta: Meta }) {
     >
       <Header meta={meta} online={onlineCount} />
 
+      {view.bots > 0 && (
+        <div className="banner">
+          🤖 You&apos;re the only human here, so {view.bots} AI player
+          {view.bots === 1 ? "" : "s"} joined to play against you. They&apos;ll
+          leave automatically when other people show up.
+        </div>
+      )}
+
       <div className="layout">
         <main className="panel">
           <p className="phase-label">
@@ -282,6 +290,7 @@ export default function GameRoom({ meta }: { meta: Meta }) {
               <div className="player-row" key={p.id}>
                 <span className={`status-dot ${p.online ? "on" : ""}`} />
                 <span className="pname">
+                  {p.isBot ? "🤖 " : ""}
                   {p.name}
                   {p.id === view.you.id ? " (you)" : ""}
                 </span>
