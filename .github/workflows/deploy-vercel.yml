@@ -1,0 +1,80 @@
+name: Deploy Party Card Games to Vercel
+
+# Manually triggered. The Vercel token is passed as a one-time input so it is
+# never stored in the repository. GitHub's runners have outbound internet
+# access and can reach the Vercel API (the dev container cannot).
+on:
+  workflow_dispatch:
+    inputs:
+      vercel_token:
+        description: "Vercel access token (full account scope)"
+        required: true
+      project_name:
+        description: "Vercel project name"
+        required: false
+        default: "stabbycakes-card-games"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Mask token
+        run: echo "::add-mask::${{ inputs.vercel_token }}"
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Create project (idempotent)
+        env:
+          VT: ${{ inputs.vercel_token }}
+          PROJECT: ${{ inputs.project_name }}
+        run: vercel project add "$PROJECT" --token="$VT" || true
+
+      - name: Link project
+        env:
+          VT: ${{ inputs.vercel_token }}
+          PROJECT: ${{ inputs.project_name }}
+        run: vercel link --yes --project "$PROJECT" --token="$VT"
+
+      - name: Pull project settings
+        env:
+          VT: ${{ inputs.vercel_token }}
+        run: vercel pull --yes --environment=production --token="$VT"
+
+      - name: Build
+        env:
+          VT: ${{ inputs.vercel_token }}
+        run: vercel build --prod --token="$VT"
+
+      - name: Deploy (production)
+        id: deploy
+        env:
+          VT: ${{ inputs.vercel_token }}
+          PROJECT: ${{ inputs.project_name }}
+        run: |
+          set -e
+          DEPLOY_URL=$(vercel deploy --prebuilt --prod --token="$VT")
+          echo "Deployment URL: $DEPLOY_URL"
+          echo "## ✅ Deployed" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Deployment: $DEPLOY_URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Production: https://$PROJECT.vercel.app" >> "$GITHUB_STEP_SUMMARY"
+          echo "DEPLOY_URL=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Print result
+        env:
+          PROJECT: ${{ inputs.project_name }}
+        run: |
+          echo "==================================================="
+          echo "LIVE_PRODUCTION_URL=https://$PROJECT.vercel.app"
+          echo "LATEST_DEPLOYMENT=${{ steps.deploy.outputs.DEPLOY_URL }}"
+          echo "==================================================="
