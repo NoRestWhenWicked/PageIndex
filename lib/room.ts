@@ -15,7 +15,7 @@ const roomKey = (game: string) => `room:${game}`;
 
 /* ---------- AI players (fill the table when you're the only human) ---------- */
 const BOT_PREFIX = "bot:";
-const TABLE_TARGET = 4; // total players to aim for when solo
+const TABLE_TARGET = 5; // total players to aim for when solo (odd # reduces ties)
 const BOT_MIN_DELAY = 1200; // ms a bot "thinks" before acting
 const BOT_MAX_DELAY = 4200;
 const BOT_NAMES = [
@@ -204,23 +204,18 @@ function orderedSubmissions(round: RoundState) {
   );
 }
 
-function tally(round: RoundState): { winnerId?: string; counts: Record<string, number> } {
+function tally(round: RoundState): { winnerIds: string[]; counts: Record<string, number> } {
   const counts: Record<string, number> = {};
   for (const sub of round.submissions) counts[sub.playerId] = 0;
   for (const owner of Object.values(round.votes)) {
     if (counts[owner] !== undefined) counts[owner] += 1;
   }
-  let winnerId: string | undefined;
   let best = -1;
-  // stable-ish: iterate submissions order, ties keep first
-  for (const sub of round.submissions) {
-    const c = counts[sub.playerId];
-    if (c > best) {
-      best = c;
-      winnerId = sub.playerId;
-    }
-  }
-  return { winnerId, counts };
+  for (const sub of round.submissions) best = Math.max(best, counts[sub.playerId]);
+  // a tie keeps ALL top-voted players as co-winners (each scores a point)
+  const winnerIds =
+    best > 0 ? round.submissions.filter((s) => counts[s.playerId] === best).map((s) => s.playerId) : [];
+  return { winnerIds, counts };
 }
 
 /* ---------- state machine ---------- */
@@ -243,6 +238,7 @@ function advance(room: RoomState, game: GameDef, humanIds: string[], force = fal
         round.phase = "results";
         round.solo = true;
         round.winnerId = round.submissions[0].playerId;
+        round.winnerIds = [round.submissions[0].playerId];
       } else {
         round.phase = "voting";
         round.phaseSince = now; // reset the clock so bots "think" before voting
@@ -258,12 +254,13 @@ function advance(room: RoomState, game: GameDef, humanIds: string[], force = fal
     const allVoted =
       participants.length > 0 && participants.every((id) => votedSet.has(id));
     if (allVoted || force) {
-      const { winnerId } = tally(round);
+      const { winnerIds } = tally(round);
       round.phase = "results";
       round.solo = false;
-      round.winnerId = winnerId;
-      if (winnerId && room.scores[winnerId] !== undefined) {
-        room.scores[winnerId] += 1;
+      round.winnerIds = winnerIds;
+      round.winnerId = winnerIds[0];
+      for (const id of winnerIds) {
+        if (room.scores[id] !== undefined) room.scores[id] += 1;
       }
     }
     return;
@@ -315,7 +312,7 @@ function buildView(
             ownerName: room.names[sub.playerId] || "Player",
             ownerId: sub.playerId,
             votes: counts[sub.playerId] || 0,
-            isWinner: sub.playerId === round.winnerId,
+            isWinner: (round.winnerIds || []).includes(sub.playerId),
           }
         : {}),
     }));

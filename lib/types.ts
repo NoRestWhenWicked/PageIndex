@@ -45,6 +45,8 @@ export interface RoundState {
   submissions: Submission[];
   votes: Record<string, string>; // voterId -> submission ownerId
   winnerId?: string;
+  /** all top-voted players (length > 1 means a tie) */
+  winnerIds?: string[];
   /** true once results were reached for a solo (single-player) round */
   solo?: boolean;
   /** ms timestamp the current phase began (drives AI "thinking" delays) */
@@ -103,4 +105,88 @@ export interface RoomView {
   }>;
   pick: number;
   solo: boolean;
+}
+
+/* ───────────────────────────── Deck Mayhem (battler) ─────────────────────── */
+export type CardEffect =
+  | { kind: "attack"; value: number }
+  | { kind: "shield"; value: number }
+  | { kind: "heal"; value: number }
+  | { kind: "draw"; value: number };
+
+export interface BattleCard {
+  id: string; // `${heroId}:${n}`
+  name: string;
+  icon: string;
+  desc: string;
+  effects: CardEffect[];
+}
+
+export interface Hero {
+  id: string;
+  name: string;
+  emoji: string;
+  accent: string;
+  blurb: string;
+  deck: BattleCard[];
+}
+
+export interface BattleSeat {
+  id: string;
+  name: string;
+  heroId: string;
+  hp: number;
+  shield: number;
+  alive: boolean;
+  isBot: boolean;
+}
+
+export interface BattleState {
+  game: string;
+  phase: "select" | "playing" | "over";
+  seats: BattleSeat[];
+  hands: Record<string, string[]>;
+  decks: Record<string, string[]>;
+  discards: Record<string, string[]>;
+  turn: string;
+  turnSince: number;
+  log: string[];
+  winnerId?: string;
+  matchNo: number;
+  picks: Record<string, string>; // humanId -> heroId (during selection)
+}
+
+export interface BattleView {
+  game: string;
+  phase: "select" | "playing" | "over";
+  matchNo: number;
+  maxHp: number;
+  you: {
+    id: string;
+    seated: boolean;
+    heroId?: string;
+    hand: BattleCard[];
+    isTurn: boolean;
+    alive: boolean;
+  };
+  seats: Array<{
+    id: string;
+    name: string;
+    heroId: string;
+    heroName: string;
+    heroEmoji: string;
+    accent: string;
+    hp: number;
+    shield: number;
+    alive: boolean;
+    isBot: boolean;
+    isYou: boolean;
+    isTurn: boolean;
+    handCount: number;
+  }>;
+  heroes: Array<{ id: string; name: string; emoji: string; accent: string; blurb: string }>;
+  yourPick?: string;
+  turnName: string;
+  log: string[];
+  winnerName?: string;
 }
