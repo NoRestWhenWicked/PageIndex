@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { getIdentity, saveName } from "@/lib/identity";
+import { Avatar, GameEmblem, HeroArt } from "./components/art";
 
 type GameMeta = {
   id: string;
@@ -73,23 +74,30 @@ export default function Lobby({ games }: { games: GameMeta[] }) {
           <span className="online-pill">
             <span className="dot" /> {total} {total === 1 ? "person" : "people"} online
           </span>
-          <input
-            className="name-edit"
-            value={me.name}
-            onChange={(e) => onNameChange(e.target.value)}
-            aria-label="Your display name"
-            placeholder="Your name"
-          />
+          <span className="me-chip">
+            <Avatar seed={me.id || "me"} size={28} />
+            <input
+              className="name-edit"
+              value={me.name}
+              onChange={(e) => onNameChange(e.target.value)}
+              aria-label="Your display name"
+              placeholder="Your name"
+            />
+          </span>
         </div>
       </div>
 
       <div className="hero">
-        <h1>Pick a game. Play solo, or wait for chaos.</h1>
-        <p>
-          Absurd party card games you can absolutely enjoy alone — and if anyone
-          else wanders in, you&apos;ll see them appear and can play the same round
-          together, live. No sign-up, just bad decisions.
-        </p>
+        <div className="hero-text">
+          <h1>Pick a game. Play solo, or wait for chaos.</h1>
+          <p>
+            Absurd party card games you can absolutely enjoy alone — AI players
+            jump in to keep you company — and if real people wander in, you&apos;ll
+            see them appear and play the same round together, live. No sign-up,
+            just bad decisions.
+          </p>
+        </div>
+        <HeroArt />
       </div>
 
       <div className="grid">
@@ -104,7 +112,7 @@ export default function Lobby({ games }: { games: GameMeta[] }) {
               style={{ ["--game-accent" as any]: g.accent }}
             >
               <span className="accent-bar" />
-              <span className="emoji">{g.emoji}</span>
+              <GameEmblem accent={g.accent} emoji={g.emoji} />
               <h3>{g.name}</h3>
               <p className="tag">{g.tagline}</p>
               <div className="card-foot">

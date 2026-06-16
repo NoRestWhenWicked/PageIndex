@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { getIdentity } from "@/lib/identity";
 import type { RoomView } from "@/lib/types";
+import { Avatar } from "../../components/art";
 
 type Meta = {
   id: string;
@@ -288,9 +289,11 @@ export default function GameRoom({ meta }: { meta: Meta }) {
           <div className="players-list">
             {view.players.map((p) => (
               <div className="player-row" key={p.id}>
-                <span className={`status-dot ${p.online ? "on" : ""}`} />
+                <span className="row-avatar">
+                  <Avatar seed={p.id} isBot={p.isBot} size={28} />
+                  <span className={`status-dot float ${p.online ? "on" : ""}`} />
+                </span>
                 <span className="pname">
-                  {p.isBot ? "🤖 " : ""}
                   {p.name}
                   {p.id === view.you.id ? " (you)" : ""}
                 </span>
