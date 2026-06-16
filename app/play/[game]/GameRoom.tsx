@@ -241,7 +241,11 @@ export default function GameRoom({ meta }: { meta: Meta }) {
           {view.phase === "results" && (
             <>
               <p className="section-label">
-                {view.solo ? "Your masterpiece" : "The results"}
+                {view.solo
+                  ? "Your masterpiece"
+                  : view.table.filter((t) => t.isWinner).length > 1
+                  ? `🤝 It's a tie! ${view.table.filter((t) => t.isWinner).length} winners — they each score`
+                  : "The results"}
               </p>
               <div className="table">
                 {view.table.map((sub) => (
