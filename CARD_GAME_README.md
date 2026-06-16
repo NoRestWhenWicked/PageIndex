@@ -96,6 +96,21 @@ Images are generated on demand the first time a card appears and cached
 one generation, ever. Until a key is set, the procedural icons are used and the
 `/api/cardart` endpoint simply returns nothing.
 
+#### Build-time art (pre-generate & commit)
+
+For instant, zero-runtime-cost art, pre-generate every card image once and
+commit them as static assets:
+
+```bash
+npm install
+OPENAI_API_KEY=sk-... npm run gen:art
+git add public/cardart && git commit -m "Add generated card art" && git push
+```
+
+This writes `public/cardart/<hash>.png` and a `manifest.json`. The app prefers
+these static images, then falls back to the runtime endpoint, then the
+procedural icon. Re-running only fills in newly added cards.
+
 ## Project layout
 
 ```
