@@ -11,6 +11,65 @@ function hash(s: string): number {
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
+/* Auto-generated card art: pick an icon that fits the card's words (with a    */
+/* deterministic fallback) and render it on a procedurally coloured sticker.    */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+// keyword → emoji. First substring match wins, so order longer/more-specific first.
+const KEYWORDS: Array<[string, string]> = [
+  ["raccoon", "🦝"], ["possum", "🐀"], ["opossum", "🐀"], ["goose", "🪿"], ["goblin", "👺"],
+  ["gremlin", "👹"], ["pigeon", "🐦"], ["crow", "🐦‍⬛"], ["llama", "🦙"], ["otter", "🦦"],
+  ["capybara", "🦫"], ["hedgehog", "🦔"], ["walrus", "🦭"], ["ferret", "🦡"], ["moth", "🦟"],
+  ["newt", "🦎"], ["unicorn", "🦄"], ["pony", "🐴"], ["dragon", "🐉"], ["dino", "🦖"],
+  ["t-rex", "🦖"], ["fairy", "🧚"], ["wizard", "🧙"], ["witch", "🧙‍♀️"], ["clown", "🤡"],
+  ["ghost", "👻"], ["robot", "🤖"], ["roomba", "🤖"], ["vacuum", "🧹"], ["cat", "🐱"],
+  ["kitten", "🐱"], ["kitty", "🐱"], ["mouse", "🐭"], ["bird", "🐦"], ["fish", "🐟"],
+  ["spoon", "🥄"], ["tooth", "🦷"], ["teeth", "🦷"], ["jar", "🫙"], ["sock", "🧦"],
+  ["box", "📦"], ["plant", "🪴"], ["moon", "🌙"], ["ocean", "🌊"], ["sea", "🌊"],
+  ["car", "🚗"], ["toilet", "🚽"], ["laser", "🔴"], ["money", "💰"], ["dollar", "💰"],
+  ["tax", "🧾"], ["fraud", "🧾"], ["receipt", "🧾"], ["email", "📧"], ["phone", "📱"],
+  ["powerpoint", "📊"], ["spreadsheet", "📊"], ["slides", "📊"], ["podcast", "🎙️"],
+  ["glitter", "✨"], ["sparkle", "✨"], ["rainbow", "🌈"], ["potion", "🧪"], ["crown", "👑"],
+  ["cupcake", "🧁"], ["snack", "🍿"], ["cereal", "🥣"], ["coffee", "☕"], ["fire", "🔥"],
+  ["combust", "🔥"], ["dread", "😨"], ["scream", "😱"], ["cry", "😭"], ["void", "🕳️"],
+  ["confidence", "😎"], ["dance", "🕺"], ["nap", "😴"], ["sleep", "😴"], ["hairball", "🐾"],
+  ["claw", "🐾"], ["bird", "🐦"], ["zodiac", "♈"], ["moon", "🌙"], ["tattoo", "🖋️"],
+  ["spreadsheet", "📊"], ["qr", "🔳"], ["finger guns", "🔫"], ["air horn", "📣"],
+  ["restraining order", "📜"], ["conspiracy", "🧷"], ["crypto", "🪙"], ["mlm", "📈"],
+];
+
+const FALLBACK = ["🎴", "💫", "🎲", "🃏", "🎯", "🪄", "🧩", "🎀", "🌀", "❓", "💥", "🔮"];
+
+function pickEmoji(text: string): string {
+  const t = text.toLowerCase();
+  for (const [kw, emo] of KEYWORDS) if (t.includes(kw)) return emo;
+  return FALLBACK[hash(text) % FALLBACK.length];
+}
+
+export function CardIcon({ text, size = 28 }: { text: string; size?: number }) {
+  const h = hash(text);
+  const emoji = pickEmoji(text);
+  const hueA = h % 360;
+  const hueB = (Math.floor(h / 13) % 360);
+  const uid = "c" + h.toString(36);
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <defs>
+        <linearGradient id={uid} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={`hsl(${hueA} 85% 88%)`} />
+          <stop offset="1" stopColor={`hsl(${hueB} 80% 78%)`} />
+        </linearGradient>
+      </defs>
+      <rect x="1.5" y="1.5" width="37" height="37" rx="11" fill={`url(#${uid})`} stroke={`hsl(${hueA} 60% 60%)`} strokeWidth="1.5" />
+      <text x="20" y="22" fontSize="20" textAnchor="middle" dominantBaseline="central">
+        {emoji}
+      </text>
+    </svg>
+  );
+}
+
+
+/* ────────────────────────────────────────────────────────────────────────── */
 /* Procedural avatar: a friendly monster for humans, a robot for AI players.   */
 /* Deterministic from `seed`, so every player gets their own unique look.      */
 /* ────────────────────────────────────────────────────────────────────────── */

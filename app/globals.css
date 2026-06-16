@@ -361,7 +361,17 @@ a {
   min-height: 92px;
   text-align: left;
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.answer-card .ac-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.answer-card .ac-text {
+  flex: 1;
 }
 .answer-card:hover {
   transform: translateY(-3px);
@@ -815,4 +825,11 @@ a {
   font-weight: 800;
   text-align: center;
   background: linear-gradient(90deg, rgba(54, 211, 153, 0.18), rgba(245, 197, 24, 0.18));
+}
+
+/* auto-generated icon line on revealed/voting submission cards */
+.sub-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
