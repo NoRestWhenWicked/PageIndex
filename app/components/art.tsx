@@ -1,14 +1,5 @@
 import React from "react";
-
-/* Small deterministic hash so a given seed always yields the same art. */
-function hash(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
+import { hashText as hash } from "@/lib/hashText";
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /* Auto-generated card art: pick an icon that fits the card's words (with a    */
@@ -76,6 +67,20 @@ export function CardIcon({ text, size = 28 }: { text: string; size?: number }) {
  */
 const artCache = new Map<string, string | null>();
 
+// Build-time generated images (public/cardart/manifest.json: { "<hash>": "file.png" })
+let manifest: Record<string, string> | null = null;
+let manifestPromise: Promise<Record<string, string>> | null = null;
+function getManifest(): Promise<Record<string, string>> {
+  if (manifest) return Promise.resolve(manifest);
+  if (!manifestPromise) {
+    manifestPromise = fetch("/cardart/manifest.json")
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((m) => (manifest = m || {}))
+      .catch(() => (manifest = {}));
+  }
+  return manifestPromise;
+}
+
 export function CardArt({ text, size = 28 }: { text: string; size?: number }) {
   const [url, setUrl] = React.useState<string | null>(() => artCache.get(text) ?? null);
 
@@ -85,16 +90,26 @@ export function CardArt({ text, size = 28 }: { text: string; size?: number }) {
       return;
     }
     let alive = true;
-    fetch(`/api/cardart?text=${encodeURIComponent(text)}`)
-      .then((r) => r.json())
-      .then((d) => {
+    (async () => {
+      // 1) build-time static asset (instant, no runtime cost)
+      const m = await getManifest();
+      const key = String(hash(text));
+      if (m && m[key]) {
+        const u = `/cardart/${m[key]}`;
+        artCache.set(text, u);
+        if (alive) setUrl(u);
+        return;
+      }
+      // 2) runtime generation (only if a key is configured server-side)
+      try {
+        const d = await fetch(`/api/cardart?text=${encodeURIComponent(text)}`).then((r) => r.json());
         const u = (d && d.url) || null;
         artCache.set(text, u);
         if (alive) setUrl(u);
-      })
-      .catch(() => {
+      } catch {
         artCache.set(text, null);
-      });
+      }
+    })();
     return () => {
       alive = false;
     };

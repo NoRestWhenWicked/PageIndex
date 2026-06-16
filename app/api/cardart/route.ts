@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getJSON, setJSON } from "@/lib/store";
+import { hashText } from "@/lib/hashText";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,21 +23,12 @@ const MODEL = process.env.CARD_ART_MODEL || "dall-e-2";
 const SIZE = process.env.CARD_ART_SIZE || "256x256";
 const ART_TTL = 60 * 60 * 24 * 30; // 30 days
 
-function hash(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
 export async function GET(req: Request) {
   const text = (new URL(req.url).searchParams.get("text") || "").slice(0, 120).trim();
   if (!text) return NextResponse.json({ url: null });
   if (!API_KEY) return NextResponse.json({ url: null });
 
-  const cacheKey = `art:v1:${MODEL}:${hash(text)}`;
+  const cacheKey = `art:v1:${MODEL}:${hashText(text)}`;
   const cached = await getJSON<string>(cacheKey);
   if (cached) return NextResponse.json({ url: cached, cached: true });
 
