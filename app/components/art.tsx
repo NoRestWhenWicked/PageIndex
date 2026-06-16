@@ -154,6 +154,34 @@ export function GameEmblem({
   );
 }
 
+/* A round hero badge (emoji on an accent gradient) for the battler. */
+export function HeroBadge({
+  emoji,
+  accent,
+  size = 56,
+}: {
+  emoji: string;
+  accent: string;
+  size?: number;
+}) {
+  const uid = "h" + hash(accent + emoji).toString(36);
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
+      <defs>
+        <radialGradient id={uid} cx="35%" cy="30%" r="80%">
+          <stop offset="0" stopColor="#ffffff" stopOpacity="0.55" />
+          <stop offset="35%" stopColor={accent} />
+          <stop offset="100%" stopColor="#10131c" />
+        </radialGradient>
+      </defs>
+      <circle cx="32" cy="32" r="29" fill={`url(#${uid})`} stroke={accent} strokeWidth="2.5" />
+      <text x="32" y="35" fontSize="30" textAnchor="middle" dominantBaseline="central">
+        {emoji}
+      </text>
+    </svg>
+  );
+}
+
 /* ────────────────────────────────────────────────────────────────────────── */
 /* Lobby hero illustration: a fan of playing cards with confetti.              */
 /* ────────────────────────────────────────────────────────────────────────── */

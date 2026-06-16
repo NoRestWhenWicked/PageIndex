@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { heartbeat, listPresence } from "@/lib/store";
-import { GAMES } from "@/lib/games";
+import { CATALOG } from "@/lib/catalog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function summarise(presence: Awaited<ReturnType<typeof listPresence>>) {
   const games: Record<string, { count: number; names: string[] }> = {};
-  for (const g of GAMES) games[g.id] = { count: 0, names: [] };
+  for (const g of CATALOG) games[g.id] = { count: 0, names: [] };
   let lobby = 0;
   for (const p of presence) {
     if (p.game === "lobby") {
