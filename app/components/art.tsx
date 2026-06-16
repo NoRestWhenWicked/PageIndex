@@ -68,6 +68,55 @@ export function CardIcon({ text, size = 28 }: { text: string; size?: number }) {
   );
 }
 
+/**
+ * Card art with optional AI generation. Always renders the procedural icon
+ * immediately; if the /api/cardart endpoint returns a generated image (only
+ * when an image API key is configured server-side), it swaps in. Results are
+ * deduped per session so each card is fetched at most once.
+ */
+const artCache = new Map<string, string | null>();
+
+export function CardArt({ text, size = 28 }: { text: string; size?: number }) {
+  const [url, setUrl] = React.useState<string | null>(() => artCache.get(text) ?? null);
+
+  React.useEffect(() => {
+    if (artCache.has(text)) {
+      setUrl(artCache.get(text)!);
+      return;
+    }
+    let alive = true;
+    fetch(`/api/cardart?text=${encodeURIComponent(text)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const u = (d && d.url) || null;
+        artCache.set(text, u);
+        if (alive) setUrl(u);
+      })
+      .catch(() => {
+        artCache.set(text, null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [text]);
+
+  if (url) {
+    return (
+      <img
+        className="card-art-img"
+        src={url}
+        width={size}
+        height={size}
+        alt=""
+        aria-hidden="true"
+        style={{ width: size, height: size, borderRadius: 10, objectFit: "cover", flexShrink: 0 }}
+      />
+    );
+  }
+  return <CardIcon text={text} size={size} />;
+}
+
+
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /* Procedural avatar: a friendly monster for humans, a robot for AI players.   */
