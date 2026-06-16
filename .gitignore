@@ -4,3 +4,10 @@ __pycache__
 .env*
 .venv/
 logs/
+
+# Node / Next.js (card game web app)
+node_modules/
+.next/
+out/
+.vercel
+*.tsbuildinfo
