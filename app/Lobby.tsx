@@ -11,6 +11,7 @@ type GameMeta = {
   emoji: string;
   tagline: string;
   accent: string;
+  kind: "party" | "battle";
 };
 
 type Counts = {
@@ -112,6 +113,7 @@ export default function Lobby({ games }: { games: GameMeta[] }) {
               style={{ ["--game-accent" as any]: g.accent }}
             >
               <span className="accent-bar" />
+              {g.kind === "battle" && <span className="kind-badge">⚔️ Battle</span>}
               <GameEmblem accent={g.accent} emoji={g.emoji} />
               <h3>{g.name}</h3>
               <p className="tag">{g.tagline}</p>
