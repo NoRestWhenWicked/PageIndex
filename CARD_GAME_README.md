@@ -41,10 +41,13 @@ moving if someone goes AFK.
 
 Your display name + id are stored in `localStorage` (editable in the top-right).
 
+> **Note:** The Next.js app lives at the **repository root** (so Vercel's
+> default Root Directory works with no extra config). The Python PageIndex
+> project also lives in this repo and is independent of the web app.
+
 ## Run locally
 
 ```bash
-cd web
 npm install
 npm run dev      # http://localhost:3000
 ```
@@ -54,9 +57,8 @@ multiplayer presence in action.
 
 ## Deploy to Vercel
 
-1. Import this repository into Vercel.
-2. Set the project's **Root Directory** to `web`.
-3. Deploy. (Framework preset: Next.js — auto-detected.)
+1. Import this repository into Vercel (leave **Root Directory** as the repo root).
+2. Deploy. (Framework preset: Next.js — auto-detected.)
 
 ### Multiplayer across many users (recommended for production)
 
@@ -80,7 +82,6 @@ across all instances.
 ## Project layout
 
 ```
-web/
 ├── app/
 │   ├── page.tsx                 # lobby (server) → Lobby.tsx (client)
 │   ├── Lobby.tsx                # game grid + live player counts
@@ -89,7 +90,7 @@ web/
 │   └── api/
 │       ├── presence/route.ts    # heartbeat + online/per-game counts
 │       └── room/[game]/route.ts # join, submit, vote, next, reset
-└── lib/
+├── lib/
     ├── games.ts                 # the three decks (prompts + answers)
     ├── room.ts                  # game-room state machine + view builder
     ├── store.ts                 # memory / Vercel KV persistence
