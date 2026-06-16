@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { getIdentity } from "@/lib/identity";
 import type { RoomView } from "@/lib/types";
-import { Avatar, CardIcon } from "../../components/art";
+import { Avatar, CardArt } from "../../components/art";
 
 type Meta = {
   id: string;
@@ -156,7 +156,7 @@ export default function GameRoom({ meta }: { meta: Meta }) {
                       onClick={() => toggleCard(c.id)}
                     >
                       <span className="ac-top">
-                        <CardIcon text={c.text} />
+                        <CardArt text={c.text} size={32} />
                         {idx >= 0 && pick > 1 && <span className="pick-num">{idx + 1}</span>}
                       </span>
                       <span className="ac-text">{c.text}</span>
@@ -217,7 +217,7 @@ export default function GameRoom({ meta }: { meta: Meta }) {
                       <div className="sub-cards-text">
                         {sub.cards.map((c, i) => (
                           <span key={i} className="sub-line">
-                            <CardIcon text={c.text} size={22} />
+                            <CardArt text={c.text} size={24} />
                             {c.text}
                           </span>
                         ))}

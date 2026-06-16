@@ -79,6 +79,23 @@ On Vercel: **Storage → Create → KV**, attach it to the project, and these
 variables are injected automatically. Redeploy and presence + rooms are shared
 across all instances.
 
+### Optional: AI-generated card art
+
+Cards show an auto-generated procedural SVG icon by default (no setup). To
+upgrade to real AI-generated sticker images, set an image API key in the
+project's environment variables:
+
+```
+OPENAI_API_KEY     enables AI card art (required)
+CARD_ART_MODEL     optional, default "dall-e-2" (cheap, 256px). Try "gpt-image-1".
+CARD_ART_SIZE      optional, default "256x256"
+```
+
+Images are generated on demand the first time a card appears and cached
+(Vercel KV if configured, else in-memory) so each distinct card costs at most
+one generation, ever. Until a key is set, the procedural icons are used and the
+`/api/cardart` endpoint simply returns nothing.
+
 ## Project layout
 
 ```
