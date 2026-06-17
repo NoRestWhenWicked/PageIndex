@@ -64,6 +64,7 @@ export interface RoomState {
   round: RoundState;
   hands: Record<string, string[]>; // playerId -> answer card ids
   scores: Record<string, number>;
+  streaks: Record<string, number>; // playerId -> consecutive round wins
   names: Record<string, string>; // playerId -> last known display name
   recentPromptIds: string[]; // to avoid repeats
   bots: BotInfo[]; // active AI players
@@ -86,10 +87,14 @@ export interface RoomView {
     id: string;
     name: string;
     score: number;
+    streak: number; // consecutive round wins (for the 🔥 badge)
+    leader: boolean; // currently top of the scoreboard (with a score > 0)
     submitted: boolean;
     online: boolean;
     isBot: boolean;
   }>;
+  /** true on the poll where YOU just won the round (drives the win FX) */
+  youWonRound?: boolean;
   /** number of AI opponents currently filling the table */
   bots: number;
   /** Submissions shown during voting (anonymised) and results (revealed). */

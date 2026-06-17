@@ -17,6 +17,9 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Dependency Review
+        # This repo can't run dependency review (it requires GitHub Advanced
+        # Security on private repos), so report but never block the PR.
+        continue-on-error: true
         uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: moderate

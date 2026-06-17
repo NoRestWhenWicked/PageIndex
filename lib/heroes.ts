@@ -77,7 +77,23 @@ const wizard: Hero = {
   ]),
 };
 
-export const HEROES: Hero[] = [unicorn, kitty, knight, wizard];
+const golem: Hero = {
+  id: "golem",
+  name: "Rocky",
+  emoji: "🪨",
+  accent: "#a98467",
+  blurb: "Immovable wall — stacks shields and grinds foes down.",
+  deck: buildDeck("golem", [
+    [5, "Boulder Toss", "🪨", "Deal 2 damage.", [{ kind: "attack", value: 2 }]],
+    [2, "Rockslide", "⛰️", "Deal 4 damage.", [{ kind: "attack", value: 4 }]],
+    [4, "Stone Skin", "🛡️", "Gain 4 shields.", [{ kind: "shield", value: 4 }]],
+    [2, "Regenerate", "🌱", "Heal 3 HP.", [{ kind: "heal", value: 3 }]],
+    [2, "Tremor", "💢", "Draw 2 cards.", [{ kind: "draw", value: 2 }]],
+    [1, "Avalanche", "🏔️", "Deal 3 and gain 2 shields.", [{ kind: "attack", value: 3 }, { kind: "shield", value: 2 }]],
+  ]),
+};
+
+export const HEROES: Hero[] = [unicorn, kitty, knight, wizard, golem];
 
 export function getHero(id: string): Hero | undefined {
   return HEROES.find((h) => h.id === id);

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getIdentity } from "@/lib/identity";
 import type { RoomView } from "@/lib/types";
 import { Avatar, CardArt } from "../../components/art";
+import { sfx, haptic, confetti, soundEnabled, setSoundEnabled } from "@/lib/fx";
 
 type Meta = {
   id: string;
@@ -31,12 +32,37 @@ export default function GameRoom({ meta }: { meta: Meta }) {
   const [view, setView] = useState<RoomView | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [sound, setSound] = useState(true);
   const meRef = useRef(me);
   meRef.current = me;
   const phaseRef = useRef<string>("");
 
   useEffect(() => {
     setMe(getIdentity());
+    setSound(soundEnabled());
+  }, []);
+
+  // Single funnel for every new view: clears stale selection and fires the
+  // celebratory FX exactly once per phase transition (not on every poll).
+  const onView = useCallback((data: RoomView) => {
+    const key = `${data.roundNo}-${data.phase}`;
+    const prev = phaseRef.current;
+    if (prev && prev !== key) {
+      setSelected([]);
+      if (data.phase === "voting") {
+        sfx("reveal");
+      } else if (data.phase === "results") {
+        if (data.youWonRound) {
+          sfx("win");
+          haptic([18, 40, 18]);
+          confetti();
+        } else {
+          sfx("reveal");
+        }
+      }
+    }
+    phaseRef.current = key;
+    setView(data);
   }, []);
 
   const poll = useCallback(async () => {
@@ -50,17 +76,11 @@ export default function GameRoom({ meta }: { meta: Meta }) {
         { cache: "no-store" }
       );
       if (!res.ok) return;
-      const data = (await res.json()) as RoomView;
-      // clear stale selection when the round/phase changes
-      if (phaseRef.current && phaseRef.current !== `${data.roundNo}-${data.phase}`) {
-        setSelected([]);
-      }
-      phaseRef.current = `${data.roundNo}-${data.phase}`;
-      setView(data);
+      onView((await res.json()) as RoomView);
     } catch {
       /* keep last view */
     }
-  }, [meta.id]);
+  }, [meta.id, onView]);
 
   useEffect(() => {
     if (!me.id) return;
@@ -81,23 +101,32 @@ export default function GameRoom({ meta }: { meta: Meta }) {
           body: JSON.stringify({ id, name: meRef.current.name, ...body }),
         });
         if (res.ok) {
-          const data = (await res.json()) as RoomView;
-          phaseRef.current = `${data.roundNo}-${data.phase}`;
           setSelected([]);
-          setView(data);
+          onView((await res.json()) as RoomView);
         }
       } finally {
         setBusy(false);
       }
     },
-    [meta.id]
+    [meta.id, onView]
   );
+
+  const toggleSound = useCallback(() => {
+    const next = !soundEnabled();
+    setSoundEnabled(next);
+    setSound(next);
+  }, []);
 
   function toggleCard(cardId: string) {
     if (!view) return;
     const pick = view.pick;
+    haptic(8);
     setSelected((cur) => {
-      if (cur.includes(cardId)) return cur.filter((c) => c !== cardId);
+      if (cur.includes(cardId)) {
+        sfx("deselect");
+        return cur.filter((c) => c !== cardId);
+      }
+      sfx("select");
       if (cur.length >= pick) {
         // replace oldest when picking single, otherwise ignore extra
         return pick === 1 ? [cardId] : cur;
@@ -109,7 +138,7 @@ export default function GameRoom({ meta }: { meta: Meta }) {
   if (!view) {
     return (
       <div className="wrap">
-        <Header meta={meta} online={1} />
+        <Header meta={meta} online={1} sound={sound} onToggleSound={toggleSound} />
         <div className="loading">Dealing you in…</div>
       </div>
     );
@@ -123,7 +152,7 @@ export default function GameRoom({ meta }: { meta: Meta }) {
       className="wrap"
       style={{ ["--accent" as any]: meta.accent }}
     >
-      <Header meta={meta} online={onlineCount} />
+      <Header meta={meta} online={onlineCount} sound={sound} onToggleSound={toggleSound} />
 
       {view.bots > 0 && (
         <div className="banner">
@@ -168,7 +197,11 @@ export default function GameRoom({ meta }: { meta: Meta }) {
                 <button
                   className="btn"
                   disabled={selected.length !== pick || busy}
-                  onClick={() => act({ action: "submit", cardIds: selected })}
+                  onClick={() => {
+                    sfx("submit");
+                    haptic(14);
+                    act({ action: "submit", cardIds: selected });
+                  }}
                 >
                   Play {pick > 1 ? `${pick} cards` : "card"}
                 </button>
@@ -212,7 +245,11 @@ export default function GameRoom({ meta }: { meta: Meta }) {
                         canVote ? "" : "notallowed"
                       }`}
                       disabled={!canVote || busy}
-                      onClick={() => act({ action: "vote", choiceKey: sub.key })}
+                      onClick={() => {
+                        sfx("click");
+                        haptic(10);
+                        act({ action: "vote", choiceKey: sub.key });
+                      }}
                     >
                       <div className="sub-cards-text">
                         {sub.cards.map((c, i) => (
@@ -302,8 +339,14 @@ export default function GameRoom({ meta }: { meta: Meta }) {
                   <span className={`status-dot float ${p.online ? "on" : ""}`} />
                 </span>
                 <span className="pname">
+                  {p.leader && <span className="crown" title="In the lead">👑</span>}
                   {p.name}
                   {p.id === view.you.id ? " (you)" : ""}
+                  {p.streak >= 2 && (
+                    <span className="streak" title={`${p.streak} wins in a row`}>
+                      🔥{p.streak}
+                    </span>
+                  )}
                 </span>
                 {view.phase === "submitting" && p.online && (
                   <span className={p.submitted ? "tick" : "waiting"}>
@@ -331,7 +374,17 @@ export default function GameRoom({ meta }: { meta: Meta }) {
   );
 }
 
-function Header({ meta, online }: { meta: Meta; online: number }) {
+function Header({
+  meta,
+  online,
+  sound,
+  onToggleSound,
+}: {
+  meta: Meta;
+  online: number;
+  sound: boolean;
+  onToggleSound: () => void;
+}) {
   return (
     <div className="room-head">
       <div className="room-title">
@@ -343,9 +396,19 @@ function Header({ meta, online }: { meta: Meta; online: number }) {
           </Link>
         </div>
       </div>
-      <span className="online-pill">
-        <span className="dot" /> {online} here now
-      </span>
+      <div className="head-right">
+        <button
+          className="sound-toggle"
+          onClick={onToggleSound}
+          aria-label={sound ? "Mute sound" : "Unmute sound"}
+          title={sound ? "Sound on" : "Sound off"}
+        >
+          {sound ? "🔊" : "🔇"}
+        </button>
+        <span className="online-pill">
+          <span className="dot" /> {online} here now
+        </span>
+      </div>
     </div>
   );
 }

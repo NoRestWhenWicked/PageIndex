@@ -14,8 +14,21 @@ click.
 | 🃏 **Fill In The Blank** | Cards Against Humanity-style "complete the sentence" chaos. |
 | 🛋️ **Horrible Therapist** | A patient describes a real problem — you give the worst possible advice. |
 | 🚩 **Red Flags** | "The date was going great… until ___." Describe the dealbreaker. |
+| 🦄 **Unicorn Chaos** | Friendship, sparkles, and mild chaos magic. |
+| 🐱 **Cat-astrophe** | Chaotic feline energy — knock it all off the table. |
+| ⚔️ **Deck Mayhem** | A real-time card battler — pick a hero, last one standing wins. |
 
 All card content is original.
+
+### Game feel
+
+- **Sound & haptics** — synthesized blips/fanfares (no audio files) for card
+  selection, submission, reveals, wins, and battle hits/shields/heals, plus a
+  vibration buzz on supporting devices. Toggle with the 🔊 button (saved per
+  browser); respects `prefers-reduced-motion`.
+- **Confetti** bursts when you win a round or a battle.
+- **Streaks & crown** — the scoreboard flags the current leader (👑) and shows a
+  🔥 badge for consecutive round wins.
 
 ## How it works
 
@@ -54,6 +67,17 @@ npm run dev      # http://localhost:3000
 
 Open the site in two browser windows (or a normal + incognito window) to see
 multiplayer presence in action.
+
+### Simulate / test the game logic
+
+```bash
+npm test          # or: npm run sim
+```
+
+This drives every game through its real server logic against the in-memory
+store — solo + AI party rounds and full Deck Mayhem matches to a winner —
+asserting invariants (hand sizes, scoring, HP/shield ranges, no stalls). A fast,
+dependency-light smoke test for the rules engine.
 
 ## Deploy to Vercel
 

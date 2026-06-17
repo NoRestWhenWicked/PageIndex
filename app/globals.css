@@ -546,6 +546,45 @@ a {
   font-weight: 800;
   color: var(--accent);
 }
+.player-row .crown {
+  margin-right: 4px;
+}
+.player-row .streak {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ff8a3d;
+  background: rgba(255, 138, 61, 0.14);
+  border-radius: 999px;
+  padding: 1px 7px;
+  vertical-align: middle;
+}
+/* sound toggle in the room header */
+.head-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.sound-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+.sound-toggle:hover {
+  background: var(--panel-2);
+  transform: translateY(-1px);
+}
+.sound-toggle:active {
+  transform: scale(0.92);
+}
 .status-dot {
   width: 8px;
   height: 8px;

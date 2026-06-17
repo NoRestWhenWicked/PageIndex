@@ -82,6 +82,7 @@ function freshRoom(gameId: string): RoomState {
     round: newRoundState(game, []),
     hands: {},
     scores: {},
+    streaks: {},
     names: {},
     recentPromptIds: [],
     bots: [],
@@ -93,6 +94,7 @@ async function loadRoom(gameId: string): Promise<RoomState> {
   if (existing) {
     // backfill any fields added since the room was created
     existing.names ||= {};
+    existing.streaks ||= {};
     existing.recentPromptIds ||= [];
     existing.bots ||= [];
     if (existing.round.phaseSince === undefined) existing.round.phaseSince = Date.now();
@@ -259,8 +261,14 @@ function advance(room: RoomState, game: GameDef, humanIds: string[], force = fal
       round.solo = false;
       round.winnerIds = winnerIds;
       round.winnerId = winnerIds[0];
+      const winSet = new Set(winnerIds);
       for (const id of winnerIds) {
         if (room.scores[id] !== undefined) room.scores[id] += 1;
+        room.streaks[id] = (room.streaks[id] || 0) + 1;
+      }
+      // anyone who played but didn't win loses their streak
+      for (const sub of round.submissions) {
+        if (!winSet.has(sub.playerId)) room.streaks[sub.playerId] = 0;
       }
     }
     return;
@@ -285,11 +293,14 @@ function buildView(
 
   // player list: humans online + active bots + anyone with a score
   const ids = new Set<string>([...onlineIds, ...botIds, ...Object.keys(room.scores)]);
+  const maxScore = Math.max(0, ...[...ids].map((id) => room.scores[id] || 0));
   const players = [...ids]
     .map((id) => ({
       id,
       name: room.names[id] || "Player",
       score: room.scores[id] || 0,
+      streak: room.streaks[id] || 0,
+      leader: maxScore > 0 && (room.scores[id] || 0) === maxScore,
       submitted: submittedSet.has(id),
       online: onlineIds.has(id) || botIds.has(id),
       isBot: botIds.has(id),
@@ -336,6 +347,8 @@ function buildView(
     // you're only truly "solo" if no other humans AND no AI opponents
     solo: onlineIds.size <= 1 && room.bots.length === 0,
     bots: room.bots.length,
+    youWonRound:
+      round.phase === "results" && !round.solo && (round.winnerIds || []).includes(meId),
   };
 }
 

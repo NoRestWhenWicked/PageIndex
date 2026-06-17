@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getIdentity } from "@/lib/identity";
 import type { BattleView, BattleCard } from "@/lib/types";
 import { HeroBadge } from "../../components/art";
+import { sfx, haptic, confetti, soundEnabled, setSoundEnabled } from "@/lib/fx";
 
 type Meta = { id: string; name: string; emoji: string; accent: string };
 
@@ -20,10 +21,39 @@ export default function BattleRoom({ meta }: { meta: Meta }) {
   const [view, setView] = useState<BattleView | null>(null);
   const [pending, setPending] = useState<string | null>(null); // cardId awaiting target
   const [busy, setBusy] = useState(false);
+  const [sound, setSound] = useState(true);
   const meRef = useRef(me);
   meRef.current = me;
+  const phaseRef = useRef<string>("");
+  const myTurnRef = useRef(false);
 
-  useEffect(() => setMe(getIdentity()), []);
+  useEffect(() => {
+    setMe(getIdentity());
+    setSound(soundEnabled());
+  }, []);
+
+  // Funnel every view through here to fire match/turn FX once on transition.
+  const onView = useCallback((data: BattleView) => {
+    const prevPhase = phaseRef.current;
+    if (prevPhase && prevPhase !== data.phase && data.phase === "over") {
+      const iWon = data.winnerName && data.winnerName === data.seats.find((s) => s.isYou)?.name;
+      if (iWon) {
+        sfx("win");
+        haptic([18, 40, 18]);
+        confetti({ count: 160 });
+      } else {
+        sfx("lose");
+      }
+    }
+    // "your turn" chime on the rising edge
+    if (data.phase === "playing" && data.you.isTurn && !myTurnRef.current) {
+      sfx("turn");
+      haptic(12);
+    }
+    myTurnRef.current = data.phase === "playing" && data.you.isTurn;
+    phaseRef.current = data.phase;
+    setView(data);
+  }, []);
 
   const poll = useCallback(async () => {
     const id = meRef.current.id;
@@ -33,11 +63,11 @@ export default function BattleRoom({ meta }: { meta: Meta }) {
         `/api/battle/${meta.id}?id=${encodeURIComponent(id)}&name=${encodeURIComponent(meRef.current.name)}`,
         { cache: "no-store" }
       );
-      if (res.ok) setView((await res.json()) as BattleView);
+      if (res.ok) onView((await res.json()) as BattleView);
     } catch {
       /* keep last */
     }
-  }, [meta.id]);
+  }, [meta.id, onView]);
 
   useEffect(() => {
     if (!me.id) return;
@@ -57,21 +87,30 @@ export default function BattleRoom({ meta }: { meta: Meta }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id, name: meRef.current.name, ...body }),
         });
-        if (res.ok) setView((await res.json()) as BattleView);
+        if (res.ok) onView((await res.json()) as BattleView);
       } finally {
         setBusy(false);
       }
     },
-    [meta.id]
+    [meta.id, onView]
   );
+
+  const toggleSound = useCallback(() => {
+    const next = !soundEnabled();
+    setSoundEnabled(next);
+    setSound(next);
+  }, []);
 
   function playCard(card: BattleCard) {
     if (!view) return;
+    const kind = cardKind(card);
+    sfx(kind === "attack" ? "hit" : kind);
+    haptic(kind === "attack" ? 16 : 10);
     const opponents = view.seats.filter((s) => s.alive && !s.isYou);
-    if (cardKind(card) === "attack" && opponents.length > 1) {
+    if (kind === "attack" && opponents.length > 1) {
       setPending(card.id); // need a target
     } else {
-      const target = cardKind(card) === "attack" ? opponents[0]?.id : undefined;
+      const target = kind === "attack" ? opponents[0]?.id : undefined;
       act({ action: "play", cardId: card.id, targetId: target });
       setPending(null);
     }
@@ -86,7 +125,7 @@ export default function BattleRoom({ meta }: { meta: Meta }) {
   if (!view) {
     return (
       <div className="wrap" style={{ ["--accent" as any]: meta.accent }}>
-        <BattleHeader meta={meta} />
+        <BattleHeader meta={meta} sound={sound} onToggleSound={toggleSound} />
         <div className="loading">Entering the arena…</div>
       </div>
     );
@@ -94,7 +133,7 @@ export default function BattleRoom({ meta }: { meta: Meta }) {
 
   return (
     <div className="wrap" style={{ ["--accent" as any]: meta.accent }}>
-      <BattleHeader meta={meta} />
+      <BattleHeader meta={meta} sound={sound} onToggleSound={toggleSound} />
 
       {/* HERO SELECT */}
       {view.phase === "select" && (
@@ -118,7 +157,7 @@ export default function BattleRoom({ meta }: { meta: Meta }) {
             <button className="btn" disabled={busy} onClick={() => act({ action: "start" })}>
               {view.yourPick ? "Start match →" : "Pick a hero to start"}
             </button>
-            <span className="hint">You + AI opponents (5 fighters). Last hero standing wins.</span>
+            <span className="hint">You + AI opponents (4 fighters). Last hero standing wins.</span>
           </div>
         </div>
       )}
@@ -241,7 +280,15 @@ export default function BattleRoom({ meta }: { meta: Meta }) {
   );
 }
 
-function BattleHeader({ meta }: { meta: Meta }) {
+function BattleHeader({
+  meta,
+  sound,
+  onToggleSound,
+}: {
+  meta: Meta;
+  sound: boolean;
+  onToggleSound: () => void;
+}) {
   return (
     <div className="room-head">
       <div className="room-title">
@@ -252,6 +299,16 @@ function BattleHeader({ meta }: { meta: Meta }) {
             ← all games
           </Link>
         </div>
+      </div>
+      <div className="head-right">
+        <button
+          className="sound-toggle"
+          onClick={onToggleSound}
+          aria-label={sound ? "Mute sound" : "Unmute sound"}
+          title={sound ? "Sound on" : "Sound off"}
+        >
+          {sound ? "🔊" : "🔇"}
+        </button>
       </div>
     </div>
   );
